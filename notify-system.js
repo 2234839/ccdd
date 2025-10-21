@@ -3,9 +3,10 @@
  * 集成声音提醒和飞书推送，支持手环震动
  */
 
-require('dotenv').config();
+// 根据脚本所在位置加载环境变量
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { spawn } = require('child_process');
 const { notifyTaskCompletion: sendFeishuNotification } = require('./feishu-notify');
 
