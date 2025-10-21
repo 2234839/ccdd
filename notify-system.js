@@ -16,6 +16,7 @@ const { notifyTaskCompletion: sendFeishuNotification } = require('./feishu-notif
 class NotificationSystem {
     constructor() {
         this.config = this.loadConfig();
+        this.projectName = this.getProjectName();
     }
 
     /**
@@ -57,6 +58,50 @@ class NotificationSystem {
                     }
                 }
             };
+        }
+    }
+
+    /**
+     * 获取项目名称
+     * 优先级: package.json > git仓库名 > 目录名
+     */
+    getProjectName() {
+        try {
+            // 1. 尝试从当前工作目录的 package.json 获取项目名称
+            const packageJsonPath = path.join(process.cwd(), 'package.json');
+            if (fs.existsSync(packageJsonPath)) {
+                const packageData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+                if (packageData.name) {
+                    console.log(`📦 从 package.json 检测到项目名称: ${packageData.name}`);
+                    return packageData.name;
+                }
+            }
+
+            // 2. 尝试从 git 仓库名获取
+            const { execSync } = require('child_process');
+            try {
+                const gitRemote = execSync('git remote get-url origin', {
+                    encoding: 'utf8',
+                    stdio: 'pipe'
+                }).trim();
+                // 从 git URL 提取仓库名
+                const matches = gitRemote.match(/\/([^\/]+)\.git$/);
+                if (matches && matches[1]) {
+                    console.log(`🔧 从 git 仓库检测到项目名称: ${matches[1]}`);
+                    return matches[1];
+                }
+            } catch (gitError) {
+                // git 命令失败，继续下一步
+            }
+
+            // 3. 从当前目录名获取
+            const dirName = path.basename(process.cwd());
+            console.log(`📁 从目录名检测到项目名称: ${dirName}`);
+            return dirName;
+
+        } catch (error) {
+            console.log('⚠️  无法获取项目名称，使用默认值');
+            return '未知项目';
         }
     }
 
@@ -135,7 +180,7 @@ class NotificationSystem {
             return false;
         }
 
-        return await sendFeishuNotification(taskInfo, webhookUrl);
+        return await sendFeishuNotification(taskInfo, webhookUrl, this.projectName);
     }
 
     /**
@@ -159,6 +204,7 @@ class NotificationSystem {
      */
     async sendAllNotifications(taskInfo = "Claude Code任务已完成") {
         console.log('🚀 开始发送任务完成通知...');
+        console.log(`📁 项目名称：${this.projectName}`);
         console.log(`📝 任务信息：${taskInfo}`);
 
         // 并行发送所有通知
