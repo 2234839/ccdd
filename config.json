@@ -3,10 +3,13 @@
     "type": "feishu",
     "feishu": {
       "webhook_url": "https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_WEBHOOK_URL_HERE",
+      "enabled": false
+    },
+    "telegram": {
       "enabled": true
     },
     "sound": {
-      "enabled": true,
+      "enabled": false,
       "backup": true
     }
   },

@@ -5,6 +5,8 @@
 ## 🎯 功能特点
 
 - ✅ **飞书通知推送**：任务完成时自动发送飞书消息到手机
+- ✅ **Telegram通知推送**：支持通过Telegram Bot发送通知消息
+- ✅ **HTTP代理支持**：Telegram通知支持HTTP/HTTPS代理配置
 - ✅ **手环震动提醒**：小米手环等智能穿戴设备会震动提醒
 - ✅ **语音声音提醒**：电脑播放"任务完成，已发送手机通知"
 - ✅ **双重提醒保障**：声音 + 手机推送，确保不会错过
@@ -18,6 +20,7 @@
 ccdd/
 ├── notify-system.js        # 主通知系统（集成所有功能）
 ├── feishu-notify.js        # 飞书通知模块
+├── telegram-notify.js      # Telegram通知模块（支持代理）
 ├── notify-sound.js         # 声音提醒模块
 ├── setup-wizard.js         # 一键配置向导
 ├── .env                    # 环境变量配置（包含敏感信息，已git忽略）
@@ -67,25 +70,78 @@ node notify-system.js --task "测试手环震动提醒"
 # 飞书Webhook地址
 FEISHU_WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/你的地址
 
+# Telegram Bot配置
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHAT_ID=your_chat_id_here
+
+# HTTP代理配置（可选，用于Telegram）
+HTTP_PROXY=http://127.0.0.1:7890
+HTTPS_PROXY=http://127.0.0.1:7890
+
 # 通知开关
 NOTIFICATION_ENABLED=true    # 是否启用飞书通知
 SOUND_ENABLED=true          # 是否启用声音提醒
 ```
 
+#### Telegram配置步骤
+1. 与 [@BotFather](https://t.me/BotFather) 对话，发送 `/newbot` 创建机器人
+2. 获取 Bot Token
+3. 与你的机器人发送一条消息
+4. 访问 `https://api.telegram.org/bot<TOKEN>/getUpdates` 获取 Chat ID
+5. 在 `.env` 文件中配置 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID`
+6. 在 `config.json` 中将 `notification.telegram.enabled` 设为 `true`
+
 #### 配置文件方式（可选）
 `config.json` 仍然支持传统配置方式，环境变量会覆盖配置文件设置。
 
+```json
+{
+  "notification": {
+    "feishu": {
+      "enabled": false
+    },
+    "telegram": {
+      "enabled": true
+    },
+    "sound": {
+      "enabled": false
+    }
+  }
+}
+```
+
 ### 🔧 Claude Code Hook配置
 
-Hook已自动配置在 `C:\Users\22348\.claude\settings.json` 中：
+在 `~/.claude/settings.json` 中配置hook，任务完成时自动发送通知：
+
 ```json
 {
   "hooks": {
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "node D:/code/code/ccdd/notify-system.js"
+        "command": "node /projects/ccdd/telegram-notify.js --message '✅ 任务完成'"
       }]
+    }]
+  }
+}
+```
+
+也可以配置多个通知方式：
+```json
+{
+  "hooks": {
+    "Stop": [{
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node /projects/ccdd/telegram-notify.js --message '✅ 任务完成'"
+        },
+        {
+          "type": "command",
+          "command": "node /projects/ccdd/feishu-notify.js --message '✅ 任务完成'"
+        }
+      ]
     }]
   }
 }
@@ -111,6 +167,11 @@ node notify-system.js --task "测试任务"
 ### 只测试飞书通知
 ```bash
 node feishu-notify.js --webhook "你的webhook地址" --message "测试消息"
+```
+
+### 只测试Telegram通知
+```bash
+node telegram-notify.js --message "测试消息"
 ```
 
 ### 只测试声音提醒
@@ -140,6 +201,7 @@ npm run test
 ### 核心模块
 - **notify-system.js**：主通知系统，协调所有提醒方式
 - **feishu-notify.js**：飞书API调用模块，支持富文本消息
+- **telegram-notify.js**：Telegram Bot API调用模块，支持HTTP/HTTPS代理
 - **notify-sound.js**：Windows声音合成模块
 - **config.json**：灵活的配置管理
 
