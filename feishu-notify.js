@@ -151,8 +151,9 @@ class FeishuNotifier {
  * 任务完成通知函数
  * @param {string} taskInfo - 任务信息
  * @param {string} webhookUrl - 飞书webhook地址
+ * @param {string} projectName - 项目名称
  */
-async function notifyTaskCompletion(taskInfo = "Claude Code任务已完成", webhookUrl = null) {
+async function notifyTaskCompletion(taskInfo = "Claude Code任务已完成", webhookUrl = null, projectName = "") {
     // 从环境变量或配置文件读取webhook地址
     const FEISHU_WEBHOOK_URL = webhookUrl ||
                              process.env.FEISHU_WEBHOOK_URL ||
@@ -172,14 +173,12 @@ async function notifyTaskCompletion(taskInfo = "Claude Code任务已完成", web
 
     // 构造丰富的通知内容
     const timestamp = new Date().toLocaleString('zh-CN');
-    const title = "🤖 Claude Code 任务完成提醒";
-    const content = `✨ **任务执行完成**
+    // 项目名放在title最前面，适配手环显示
+    const title = projectName ? `${projectName}: ${taskInfo}` : taskInfo;
+    const content = `⏰ 完成时间：${timestamp}
+🎯 手机震动 + 手环震动提醒
 
-📝 任务信息：${taskInfo}
-⏰ 完成时间：${timestamp}
-🎯 提醒方式：手机震动 + 手环震动
-
-💡 现在可以查看执行结果了！`;
+💡 可以查看执行结果了！`;
 
     try {
         // 发送富文本消息
