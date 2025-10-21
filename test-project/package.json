@@ -1,0 +1,12 @@
+{
+  "name": "test-notification",
+  "version": "1.0.0",
+  "description": "测试项目，用于验证发声提醒功能",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"测试任务运行中...\" && sleep 2 && echo \"测试完成！\""
+  },
+  "keywords": ["test"],
+  "author": "",
+  "license": "ISC"
+}

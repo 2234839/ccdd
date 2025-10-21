@@ -1,0 +1,16 @@
+{
+  "name": "ccdd",
+  "version": "1.0.0",
+  "description": "这是一个智能提醒系统，用于在Claude Code完成任务时通过多种方式提醒你，支持手机通知和手环震动，让你可以专心玩手机而不用频繁检查任务状态。",
+  "main": "feishu-notify.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  }
+}

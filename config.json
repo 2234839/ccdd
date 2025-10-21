@@ -1,0 +1,18 @@
+{
+  "notification": {
+    "type": "feishu",
+    "feishu": {
+      "webhook_url": "https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_WEBHOOK_URL_HERE",
+      "enabled": true
+    },
+    "sound": {
+      "enabled": true,
+      "backup": true
+    }
+  },
+  "app": {
+    "name": "Claude Code 任务完成提醒",
+    "version": "1.1.0",
+    "description": "支持飞书通知和手环震动的任务完成提醒系统"
+  }
+}
