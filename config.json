@@ -1,6 +1,6 @@
 {
   "notification": {
-    "type": "feishu",
+    "type": "telegram",
     "feishu": {
       "webhook_url": "https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_WEBHOOK_URL_HERE",
       "enabled": false
@@ -10,7 +10,7 @@
     },
     "sound": {
       "enabled": false,
-      "backup": true
+      "backup": false
     }
   },
   "app": {
