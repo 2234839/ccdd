@@ -253,11 +253,13 @@ async function notifyTaskCompletion(taskInfo = "Claude Code任务已完成", opt
         hour12: false
     });
 
-    const message = `🤖 <b>Claude Code 任务完成提醒</b>
+    // 获取项目路径并提取项目名称
+    const projectDir = process.env.CLAUDE_PROJECT_DIR;
+    const projectName = projectDir ? path.basename(projectDir) : '未知项目';
 
-✨ <b>任务执行完成</b>
+    const message = `🤖 <b>${taskInfo}</b>
 
-📝 任务信息：${taskInfo}
+📁 项目名称：${projectName}
 ⏰ 完成时间：${timestamp}
 
 💡 现在可以查看执行结果了！`;
