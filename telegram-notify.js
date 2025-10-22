@@ -3,12 +3,12 @@
  * 通过Telegram Bot API发送消息通知
  */
 
-require('dotenv').config();
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 const fs = require('fs');
 const path = require('path');
+const { envConfig } = require('./env-config');
 
 /**
  * Telegram通知类
@@ -18,14 +18,12 @@ class TelegramNotifier {
      * 构造函数
      */
     constructor() {
-        // 从环境变量读取敏感信息
-        this.botToken = process.env.TELEGRAM_BOT_TOKEN;
-        this.chatId = process.env.TELEGRAM_CHAT_ID;
+        // 使用统一的环境变量配置
+        const telegramConfig = envConfig.getTelegramConfig();
 
-        // 读取代理配置
-        this.proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
-
-        // 从config.json读取功能开关
+        this.botToken = telegramConfig.bot_token;
+        this.chatId = telegramConfig.chat_id;
+        this.proxyUrl = telegramConfig.proxy_url;
         this.enabled = this._loadConfig();
 
         if (this.enabled) {
@@ -230,10 +228,10 @@ class TelegramNotifier {
 /**
  * 任务完成通知函数
  * @param {string} taskInfo - 任务信息
- * @param {Object} options - 额外选项
+ * @param {string} projectName - 项目名称
  * @returns {Promise<boolean>} 发送是否成功
  */
-async function notifyTaskCompletion(taskInfo = "Claude Code任务已完成", options = {}) {
+async function notifyTaskCompletion(taskInfo = "Claude Code任务已完成", projectName = "") {
     const notifier = new TelegramNotifier();
 
     if (!notifier.enabled) {
@@ -253,16 +251,14 @@ async function notifyTaskCompletion(taskInfo = "Claude Code任务已完成", opt
         hour12: false
     });
 
-    // 获取项目路径并提取项目名称
-    const projectDir = process.env.CLAUDE_PROJECT_DIR;
-    const projectName = projectDir ? path.basename(projectDir) : '未知项目';
+    // 项目名放在最前面，适配显示
+    const title = projectName ? `${projectName}: ${taskInfo}` : taskInfo;
 
-    const message = `🤖 <b>${taskInfo}</b>
+    const message = `🤖 <b>${title}</b>
 
-📁 项目名称：${projectName}
 ⏰ 完成时间：${timestamp}
 
-💡 现在可以查看执行结果了！`;
+💡 可以查看执行结果了！`;
 
     try {
         const success = await notifier.sendMessage(message);

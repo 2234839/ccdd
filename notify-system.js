@@ -3,12 +3,11 @@
  * 集成声音提醒和飞书推送，支持手环震动
  */
 
-// 根据脚本所在位置加载环境变量
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { spawn } = require('child_process');
-const { notifyTaskCompletion: sendFeishuNotification } = require('./feishu-notify');
+const { envConfig } = require('./env-config');
+const { NotificationManager } = require('./notification-manager');
 
 /**
  * 通知系统管理器
@@ -16,6 +15,8 @@ const { notifyTaskCompletion: sendFeishuNotification } = require('./feishu-notif
 class NotificationSystem {
     constructor() {
         this.config = this.loadConfig();
+        this.projectName = this.getProjectName();
+        this.notificationManager = new NotificationManager(this.config, this.projectName);
     }
 
     /**
@@ -27,36 +28,85 @@ class NotificationSystem {
             const configData = fs.readFileSync(configPath, 'utf8');
             const config = JSON.parse(configData);
 
-            // 从环境变量覆盖配置
-            if (process.env.FEISHU_WEBHOOK_URL) {
-                config.notification.feishu.webhook_url = process.env.FEISHU_WEBHOOK_URL;
+            // 从环境变量配置覆盖配置文件
+            const envVars = envConfig.getAllConfig();
+
+            // 飞书配置
+            if (envVars.feishu.webhook_url) {
+                config.notification.feishu.webhook_url = envVars.feishu.webhook_url;
                 config.notification.feishu.enabled = true;
             }
 
-            if (process.env.NOTIFICATION_ENABLED !== undefined) {
-                config.notification.feishu.enabled = process.env.NOTIFICATION_ENABLED === 'true';
+            // Telegram配置
+            if (envVars.telegram.enabled) {
+                config.notification.telegram = {
+                    ...config.notification.telegram,
+                    ...envVars.telegram,
+                    enabled: true
+                };
             }
 
+            // 声音配置
             if (process.env.SOUND_ENABLED !== undefined) {
-                config.notification.sound.enabled = process.env.SOUND_ENABLED === 'true';
+                config.notification.sound.enabled = envVars.sound.enabled;
             }
 
             return config;
         } catch (error) {
             console.log('⚠️  无法加载配置文件，使用环境变量配置');
+            const envVars = envConfig.getAllConfig();
             return {
                 notification: {
-                    type: process.env.FEISHU_WEBHOOK_URL ? 'feishu' : 'sound',
-                    feishu: {
-                        enabled: !!process.env.FEISHU_WEBHOOK_URL,
-                        webhook_url: process.env.FEISHU_WEBHOOK_URL || ''
-                    },
-                    sound: {
-                        enabled: process.env.SOUND_ENABLED !== 'false',
-                        backup: true
-                    }
+                    type: envVars.feishu.enabled ? 'feishu' : 'sound',
+                    feishu: envVars.feishu,
+                    telegram: envVars.telegram,
+                    sound: envVars.sound
                 }
             };
+        }
+    }
+
+    /**
+     * 获取项目名称
+     * 优先级: package.json > git仓库名 > 目录名
+     */
+    getProjectName() {
+        try {
+            // 1. 尝试从当前工作目录的 package.json 获取项目名称
+            const packageJsonPath = path.join(process.cwd(), 'package.json');
+            if (fs.existsSync(packageJsonPath)) {
+                const packageData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+                if (packageData.name) {
+                    console.log(`📦 从 package.json 检测到项目名称: ${packageData.name}`);
+                    return packageData.name;
+                }
+            }
+
+            // 2. 尝试从 git 仓库名获取
+            const { execSync } = require('child_process');
+            try {
+                const gitRemote = execSync('git remote get-url origin', {
+                    encoding: 'utf8',
+                    stdio: 'pipe'
+                }).trim();
+                // 从 git URL 提取仓库名
+                const matches = gitRemote.match(/\/([^\/]+)\.git$/);
+                if (matches && matches[1]) {
+                    console.log(`🔧 从 git 仓库检测到项目名称: ${matches[1]}`);
+                    return matches[1];
+                }
+            } catch (gitError) {
+                // git 命令失败，继续下一步
+            }
+
+            // 3. 从当前目录名获取
+            const dirName = path.basename(process.cwd());
+            console.log(`📁 从目录名检测到项目名称: ${dirName}`);
+            return dirName;
+
+        } catch (error) {
+            console.log('⚠️  无法获取项目名称，使用默认值');
+            return '未知项目';
         }
     }
 
@@ -135,79 +185,31 @@ class NotificationSystem {
             return false;
         }
 
-        return await sendFeishuNotification(taskInfo, webhookUrl);
-    }
-
-    /**
-     * 打印飞书配置指南
-     */
-    printFeishuSetupGuide() {
-        console.log('');
-        console.log('📋 飞书Webhook配置指南：');
-        console.log('1. 在飞书中创建一个群组（可以只包含你自己）');
-        console.log('2. 进入群组设置 > 群机器人 > 添加机器人');
-        console.log('3. 选择"自定义机器人"');
-        console.log('4. 设置机器人名称和头像');
-        console.log('5. 复制生成的Webhook地址');
-        console.log('6. 编辑 config.json 文件，将webhook地址填入 feishu.webhook_url');
-        console.log('7. 将 feishu.enabled 设置为 true');
-        console.log('');
+        return await sendFeishuNotification(taskInfo, webhookUrl, this.projectName);
     }
 
     /**
      * 发送所有类型的通知
      */
     async sendAllNotifications(taskInfo = "Claude Code任务已完成") {
-        console.log('🚀 开始发送任务完成通知...');
+        const icons = this.notificationManager.getEnabledNotificationIcons();
+        console.log(`🚀 开始发送任务完成通知... ${icons}`);
+        console.log(`📁 项目名称：${this.projectName}`);
         console.log(`📝 任务信息：${taskInfo}`);
 
-        // 并行发送所有通知
-        const notifications = [];
+        // 发送所有通知
+        const results = await this.notificationManager.sendAllNotifications(taskInfo);
 
-        // 发送飞书通知
-        if (this.config.notification.feishu.enabled) {
-            notifications.push(
-                this.sendFeishuNotification(taskInfo).then(success => {
-                    console.log(success ? '✅ 飞书通知发送成功' : '❌ 飞书通知发送失败');
-                    return success;
-                })
-            );
-        }
-
-        // 发送声音通知
+        // 添加声音通知
         if (this.config.notification.sound.enabled) {
-            notifications.push(
-                new Promise(resolve => {
-                    this.sendSoundNotification();
-                    setTimeout(() => {
-                        console.log('🔊 声音提醒已播放');
-                        resolve(true);
-                    }, 1000);
-                })
-            );
+            this.sendSoundNotification();
+            setTimeout(() => {
+                console.log('🔊 声音提醒已播放');
+            }, 1000);
         }
 
-        // 等待所有通知完成
-        const results = await Promise.allSettled(notifications);
-
-        console.log('');
-        console.log('📊 通知发送结果汇总：');
-        results.forEach((result, index) => {
-            const status = result.status === 'fulfilled' ? '✅ 成功' : '❌ 失败';
-            const type = this.config.notification.feishu.enabled && index === 0 ? '飞书通知' : '声音提醒';
-            console.log(`  ${type}：${status}`);
-        });
-
-        console.log('');
-        console.log('🎯 提醒效果：');
-        if (this.config.notification.feishu.enabled) {
-            console.log('  📱 手机将收到飞书通知');
-            console.log('  ⌚ 小米手环会震动提醒');
-        }
-        if (this.config.notification.sound.enabled) {
-            console.log('  🔊 电脑会播放语音提醒');
-        }
-        console.log('');
+        // 打印结果汇总
+        this.notificationManager.printNotificationSummary(results);
 
         // 3秒后退出
         setTimeout(() => {

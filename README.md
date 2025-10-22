@@ -10,6 +10,8 @@
 - ✅ **手环震动提醒**：小米手环等智能穿戴设备会震动提醒
 - ✅ **语音声音提醒**：电脑播放"任务完成，已发送手机通知"
 - ✅ **双重提醒保障**：声音 + 手机推送，确保不会错过
+- ✅ **智能项目识别**：自动识别项目名称（package.json > git仓库名 > 目录名）
+- ✅ **精简消息格式**：项目名: 任务信息，适配手环显示
 - ✅ **Windows系统优化**：完美支持Windows 10/11
 - ✅ **配置灵活**：可自由开关各种提醒方式
 - ✅ **安全可靠**：使用官方API，安全稳定
@@ -18,21 +20,22 @@
 
 ```
 ccdd/
-├── notify-system.js        # 主通知系统（集成所有功能）
-├── feishu-notify.js        # 飞书通知模块
-├── telegram-notify.js      # Telegram通知模块（支持代理）
-├── notify-sound.js         # 声音提醒模块
-├── setup-wizard.js         # 一键配置向导
-├── .env                    # 环境变量配置（包含敏感信息，已git忽略）
-├── .env.example           # 环境变量模板文件
-├── .gitignore             # Git忽略文件配置
-├── config.json            # 传统配置文件（可选）
-├── package.json           # NPM项目配置
-├── test-project/          # 测试项目
+├── notify-system.js           # 主通知系统（集成所有功能）
+├── notification-manager.js    # 通知管理器（统一接口管理）
+├── env-config.js             # 环境变量配置管理（统一环境变量）
+├── feishu-notify.js          # 飞书通知模块
+├── telegram-notify.js        # Telegram通知模块（支持代理）
+├── setup-wizard.js           # 一键配置向导
+├── .env                     # 环境变量配置（包含敏感信息，已git忽略）
+├── .env.example            # 环境变量模板文件
+├── .gitignore              # Git忽略文件配置
+├── config.json             # 传统配置文件（可选）
+├── package.json            # NPM项目配置
+├── test-project/           # 测试项目
 │   └── package.json
-├── README.md              # 项目说明文档
-├── SETUP.md               # 详细配置指南
-└── task-completion-log.jsonl  # 任务日志
+├── README.md               # 项目说明文档
+├── SETUP.md                # 详细配置指南
+└── task-completion-log.jsonl # 任务日志
 ```
 
 ## 🛠 安装和配置
@@ -114,38 +117,40 @@ SOUND_ENABLED=true          # 是否启用声音提醒
 
 在 `~/.claude/settings.json` 中配置hook，任务完成时自动发送通知：
 
+**推荐配置（使用统一通知系统）**：
 ```json
 {
   "hooks": {
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "node /projects/ccdd/telegram-notify.js --message '✅ 任务完成'"
+        "command": "node /projects/ccdd/notify-system.js --message 'Claude Code任务已完成'"
       }]
     }]
   }
 }
 ```
 
-也可以配置多个通知方式：
+**高级配置（自定义消息）**：
 ```json
 {
   "hooks": {
     "Stop": [{
-      "hooks": [
-        {
-          "type": "command",
-          "command": "node /projects/ccdd/telegram-notify.js --message '✅ 任务完成'"
-        },
-        {
-          "type": "command",
-          "command": "node /projects/ccdd/feishu-notify.js --message '✅ 任务完成'"
-        }
-      ]
+      "hooks": [{
+        "type": "command",
+        "command": "node /projects/ccdd/notify-system.js --message '代码优化完成'"
+      }]
     }]
   }
 }
 ```
+
+该配置会：
+- ✅ 自动识别项目名称并显示在通知标题
+- 📱 发送飞书通知（如果配置了）
+- 📲 发送Telegram通知（如果配置了）
+- 🔊 播放声音提醒
+- ⌚ 触发手环震动
 
 ## 🎯 使用效果
 
@@ -188,22 +193,31 @@ npm run test
 ## 🔧 技术实现
 
 ### 架构设计
-- **模块化设计**：分离飞书通知、声音提醒、配置管理
+- **分层架构**：env-config → notification-manager → notify-system
+- **模块化设计**：分离各种通知方式，独立开发和测试
+- **统一接口**：通过NotificationManager统一管理所有通知
 - **异步处理**：并行发送多种通知，提高响应速度
 - **容错机制**：单一通知失败不影响其他通知方式
 - **环境变量优先**：支持.env安全配置，保护敏感信息
 
 ### 安全特性
-- 🔒 **环境变量保护**：webhook地址存储在.env文件中，已加入.gitignore
+- 🔒 **环境变量保护**：敏感信息存储在.env文件中，已加入.gitignore
 - 🔐 **配置隔离**：敏感配置与代码分离，防止意外泄露
 - 🛡️ **模板化配置**：提供.env.example模板，便于团队协作
+- 🌐 **代理支持**：Telegram通知支持HTTP/HTTPS代理，适应网络环境
 
 ### 核心模块
 - **notify-system.js**：主通知系统，协调所有提醒方式
+- **notification-manager.js**：通知管理器，统一管理各种通知接口
+- **env-config.js**：环境变量配置管理，统一处理环境变量加载
 - **feishu-notify.js**：飞书API调用模块，支持富文本消息
 - **telegram-notify.js**：Telegram Bot API调用模块，支持HTTP/HTTPS代理
-- **notify-sound.js**：Windows声音合成模块
-- **config.json**：灵活的配置管理
+- **config.json**：传统的配置文件管理（可选）
+
+### 智能功能
+- 🧠 **项目名称识别**：自动识别当前项目名称（package.json > git仓库名 > 目录名）
+- 📱 **手环适配**：消息格式优化，项目名优先显示，适配小屏幕设备
+- 🔄 **跨项目支持**：无论从哪个目录启动Claude都能正确识别项目
 
 ### Hook集成
 - 使用Claude Code的Stop hook，在任务完成时自动触发
