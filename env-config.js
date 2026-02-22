@@ -20,7 +20,6 @@ class EnvConfig {
      */
     loadEnvironmentVariables() {
         try {
-            // 优先加载 notify-system.js 所在目录的 .env 文件
             const envPath = path.join(__dirname, '.env');
 
             if (fs.existsSync(envPath)) {
@@ -42,21 +41,6 @@ class EnvConfig {
         return {
             webhook_url: process.env.FEISHU_WEBHOOK_URL || '',
             enabled: process.env.FEISHU_WEBHOOK_URL ? true : false
-        };
-    }
-
-    /**
-     * 获取Telegram配置
-     */
-    getTelegramConfig() {
-        return {
-            bot_token: process.env.TELEGRAM_BOT_TOKEN || '',
-            chat_id: process.env.TELEGRAM_CHAT_ID || '',
-            enabled: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
-            proxy_url: process.env.HTTPS_PROXY ||
-                      process.env.HTTP_PROXY ||
-                      process.env.https_proxy ||
-                      process.env.http_proxy || ''
         };
     }
 
@@ -85,7 +69,6 @@ class EnvConfig {
     getAllConfig() {
         return {
             feishu: this.getFeishuConfig(),
-            telegram: this.getTelegramConfig(),
             sound: this.getSoundConfig(),
             notification: this.getNotificationConfig()
         };

@@ -1,4 +1,4 @@
-# 环境变量文件 - 包含敏感信息
+# 环境变量文件
 .env
 .env.local
 .env.production
@@ -39,3 +39,7 @@ coverage/
 # 缓存文件
 .cache/
 .npm/
+.ace-tool/
+
+# Claude Code 本地配置
+.claude/
