@@ -212,9 +212,14 @@ function getCommandLineArgs() {
  * 包含 last_assistant_message 等信息
  */
 function readStdinSync() {
-    const { readFileSync } = require('fs');
+    const { readSync } = require('fs');
     try {
-        return readFileSync(0, 'utf8').trim();
+        // 使用 readSync 替代 readFileSync 以兼容 Windows
+        // Windows 上 fs.readFileSync(0) 无法正确读取 stdin，因为
+        // Windows 控制台/管道句柄与 POSIX 文件描述符处理方式不同
+        const buffer = Buffer.alloc(65536);
+        const bytesRead = readSync(0, buffer, 0, buffer.length, null);
+        return bytesRead > 0 ? buffer.toString('utf8', 0, bytesRead).trim() : '';
     } catch {
         return '';
     }
