@@ -5,6 +5,7 @@
 
 const { FeishuNotifier } = require('./feishu-notify');
 const { TelegramNotifier } = require('./telegram-notify');
+const { BarkNotifier } = require('./bark-notify');
 
 /**
  * 通知管理器类
@@ -42,6 +43,18 @@ class NotificationManager {
                 send: async (taskInfo) => {
                     const { notifyTaskCompletion } = require('./telegram-notify');
                     return await notifyTaskCompletion(taskInfo, this.projectName);
+                }
+            };
+        }
+
+        // Bark通知器
+        if (this.config.notification.bark && this.config.notification.bark.enabled) {
+            notifiers.bark = {
+                enabled: true,
+                notifier: new BarkNotifier(this.config.notification.bark),
+                send: async (taskInfo) => {
+                    const { notifyTaskCompletion } = require('./bark-notify');
+                    return await notifyTaskCompletion(taskInfo, this.config.notification.bark, this.projectName);
                 }
             };
         }
@@ -97,6 +110,7 @@ class NotificationManager {
         const typeNames = {
             feishu: '飞书通知',
             telegram: 'Telegram通知',
+            bark: 'Bark 通知',
             sound: '声音提醒'
         };
         return typeNames[type] || type;
@@ -114,7 +128,7 @@ class NotificationManager {
             const typeName = this.getTypeName(type);
             const result = results[index];
             const status = result && result.value && result.value.success ? '✅ 成功' : '❌ 失败';
-            const icon = type === 'feishu' ? '📱' : type === 'telegram' ? '📲' : '🔊';
+            const icon = type === 'feishu' ? '📱' : type === 'telegram' ? '📲' : type === 'bark' ? '📲' : '🔊';
             console.log(`  ${icon} ${typeName}：${status}`);
         });
 
@@ -127,6 +141,9 @@ class NotificationManager {
         if (this.notifiers.telegram) {
             console.log('  📲 Telegram将收到推送通知');
         }
+        if (this.notifiers.bark) {
+            console.log('  📱 iPhone 将收到 Bark 推送通知');
+        }
         console.log('');
     }
 
@@ -137,6 +154,7 @@ class NotificationManager {
         const icons = [];
         if (this.notifiers.feishu) icons.push('📱');
         if (this.notifiers.telegram) icons.push('📲');
+        if (this.notifiers.bark) icons.push('📲');
         return icons.join(' ');
     }
 }

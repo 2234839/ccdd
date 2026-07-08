@@ -2,7 +2,7 @@
 
 Claude Code 完成任务时自动发通知到手机/手环，你不用一直盯着屏幕等。
 
-支持飞书 Webhook、Telegram Bot、Windows 声音提醒。
+支持飞书 Webhook、Telegram Bot、Bark（iOS 推送）、Windows 声音提醒。
 
 ## 一句话配置
 
