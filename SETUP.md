@@ -28,8 +28,26 @@ TELEGRAM_CHAT_ID=你的chat_id
 
 默认开启，仅支持 Windows。不需要的话设 `SOUND_ENABLED=false`。
 
+## macOS 原生通知
+
+macOS 上默认开启，任务完成时弹出通知中心横幅并播放提示音，无需配置 webhook。
+
+需要先安装 `terminal-notifier`（一次性）：
+
+```bash
+brew install terminal-notifier
+```
+
+首次运行时若 macOS 弹出「"terminal-notifier" 想要发送通知」，点**允许**即可。
+如果只进通知中心不弹横幅，去 **系统设置 → 通知 → terminal-notifier** 把样式设为**横幅/提醒**。
+
+可选配置：
+- `MAC_NOTIFICATION_ENABLED=false` — 关闭原生通知
+- `MAC_NOTIFICATION_SOUND=Hero` — 换提示音（见 `/System/Library/Sounds`，如 Glass/Ping/Hero/Submarine）
+
 ## 故障排除
 
 - 飞书收不到：检查 webhook 地址是否完整复制了
 - 手环不震：确认飞书通知权限开着，手环和手机蓝牙连着
 - 声音不响：Windows only，检查 PowerShell 能否正常运行
+- macOS 没横幅/没声音：先确认已 `brew install terminal-notifier`；再去 **系统设置 → 通知 → terminal-notifier** 开启通知并设为横幅样式（osascript 的通知会被 Script Editor 权限静默丢弃，故本项目改用 terminal-notifier）

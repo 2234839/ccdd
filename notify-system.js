@@ -29,6 +29,7 @@ class NotificationSystem {
                 type: envVars.feishu.enabled ? 'feishu' : 'sound',
                 feishu: envVars.feishu,
                 telegram: envVars.telegram,
+                mac: envVars.mac,
                 sound: envVars.sound
             }
         };
@@ -229,11 +230,18 @@ function buildMessageFromContext(options) {
         return options.message || options.task;
     }
 
-    // 2. 尝试从 stdin 读取 Claude Stop hook 的 JSON 上下文
+    // 2. 尝试从 stdin 读取 Claude hook 的 JSON 上下文
     const stdin = readStdinSync();
     if (stdin) {
         try {
             const ctx = JSON.parse(stdin);
+
+            // Notification hook：Claude 需要权限确认或等待输入，直接透传通知文案
+            if (ctx.hook_event_name === 'Notification' && ctx.message) {
+                return ctx.message;
+            }
+
+            // Stop hook：从最后一条消息提取任务摘要
             if (ctx.last_assistant_message) {
                 const text = ctx.last_assistant_message
                     .split('\n')
