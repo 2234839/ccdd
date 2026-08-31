@@ -67,3 +67,38 @@ brew install terminal-notifier
 不传 `--message` 时，会自动从 Claude 的上下文中提取最后一条消息作为通知内容。
 
 更多细节见 [SETUP.md](./SETUP.md)。
+
+## Codex CLI 任务完成提醒
+
+在 `~/.codex/config.toml` 末尾添加：
+
+```toml
+# Codex 回答结束通知：复用 ccdd 通知系统（与 Claude Code Stop hook 一致）
+[[hooks.Stop]]
+[[hooks.Stop.hooks]]
+type = "command"
+command = "node /Users/thread0_japheth/Code/ccdd/notify-system.js"
+async = true
+```
+
+- `Stop` 在 Codex 每轮回答结束时触发，与 Claude Code 的 `Stop` hook 行为一致；
+- 不传 `--message` 时自动从 Codex 传入的 `last_assistant_message` 提取通知内容，取不到则回退为「任务完成」；
+- `async = true` 让通知在后台执行，不阻塞 Codex 继续输入；
+- 配置后首次运行 `codex`，在 TUI 里执行 `/hooks` 审查并信任该 hook，否则不会执行。
+
+### 请求授权提醒
+
+Codex 等待你授权执行命令时也会通知（对应 Claude Code 的 `Notification`/`permission_prompt`），继续在 `~/.codex/config.toml` 末尾追加：
+
+```toml
+# Codex 请求授权通知
+[[hooks.PermissionRequest]]
+[[hooks.PermissionRequest.hooks]]
+type = "command"
+command = "node /Users/thread0_japheth/Code/ccdd/notify-system.js"
+async = true
+```
+
+- 通知内容自动带上待执行的命令或授权原因（`tool_input.description` 优先，取不到则用 `tool_input.command`）；
+- hook 只通知、不返回决策，不影响正常审批流程；
+- 同样需要 `/hooks` 信任后生效。

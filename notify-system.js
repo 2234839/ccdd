@@ -241,6 +241,15 @@ function buildMessageFromContext(options) {
                 return ctx.message;
             }
 
+            // PermissionRequest hook（Codex）：等待用户授权，透传待执行命令或授权原因
+            if (ctx.hook_event_name === 'PermissionRequest') {
+                const input = ctx.tool_input || {};
+                const detail = input.description || input.command;
+                return detail
+                    ? `Codex 需要授权：${String(detail).replace(/[\r\n]+/g, ' ').slice(0, 400)}`
+                    : 'Codex 需要你的授权';
+            }
+
             // Stop hook：从最后一条消息提取任务摘要
             if (ctx.last_assistant_message) {
                 const text = ctx.last_assistant_message
