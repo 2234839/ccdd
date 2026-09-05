@@ -62,11 +62,23 @@ class EnvConfig {
 
     /**
      * 获取声音通知配置
+     * Windows 声音基于 PowerShell，在 macOS 上无效，由 mac 原生通知接管声音
      */
     getSoundConfig() {
         return {
-            enabled: process.env.SOUND_ENABLED !== 'false',
+            enabled: process.platform !== 'darwin' && process.env.SOUND_ENABLED !== 'false',
             backup: true
+        };
+    }
+
+    /**
+     * 获取 macOS 原生通知配置
+     * 仅在 macOS 平台生效，默认开启，可通过 MAC_NOTIFICATION_ENABLED=false 关闭
+     */
+    getMacConfig() {
+        return {
+            enabled: process.platform === 'darwin' && process.env.MAC_NOTIFICATION_ENABLED !== 'false',
+            sound: process.env.MAC_NOTIFICATION_SOUND || 'Glass'
         };
     }
 
@@ -87,6 +99,7 @@ class EnvConfig {
             feishu: this.getFeishuConfig(),
             telegram: this.getTelegramConfig(),
             sound: this.getSoundConfig(),
+            mac: this.getMacConfig(),
             notification: this.getNotificationConfig()
         };
     }
