@@ -4,6 +4,8 @@ Claude Code 完成任务时自动发通知到手机/手环，你不用一直盯�
 
 支持飞书 Webhook、Telegram Bot、Windows 声音提醒。
 
+[![扫码加入开发者社群](https://tsfullstack.heartstack.space/group/gs.svg?from=ccdd)](https://tsfullstack.heartstack.space/group/gs?from=ccdd)
+
 ## 一句话配置
 
 复制下面这段发给你的 AI 编程助手，它会帮你搞定：
